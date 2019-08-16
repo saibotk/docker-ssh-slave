@@ -20,7 +20,7 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 #  THE SOFTWARE.
 
-FROM openjdk:8-jdk
+FROM openjdk:12-jdk
 LABEL MAINTAINER="Nicolas De Loof <nicolas.deloof@gmail.com>"
 
 ARG user=jenkins
@@ -31,18 +31,20 @@ ARG JENKINS_AGENT_HOME=/home/${user}
 
 ENV JENKINS_AGENT_HOME ${JENKINS_AGENT_HOME}
 
+RUN yum -y update \
+    && yum -y install bash which
+
 RUN groupadd -g ${gid} ${group} \
     && useradd -d "${JENKINS_AGENT_HOME}" -u "${uid}" -g "${gid}" -m -s /bin/bash "${user}"
 
 # setup SSH server
-RUN apt-get update \
-    && apt-get install --no-install-recommends -y openssh-server \
-    && rm -rf /var/lib/apt/lists/*
+RUN yum -y update \
+    && yum -y install openssh-server
 RUN sed -i /etc/ssh/sshd_config \
         -e 's/#PermitRootLogin.*/PermitRootLogin no/' \
-        -e 's/#RSAAuthentication.*/RSAAuthentication yes/'  \
-        -e 's/#PasswordAuthentication.*/PasswordAuthentication no/' \
-        -e 's/#SyslogFacility.*/SyslogFacility AUTH/' \
+        -e 's/#PubkeyAuthentication.*/PubkeyAuthentication yes/'  \
+        -e 's/PasswordAuthentication.*/PasswordAuthentication no/' \
+        -e 's/SyslogFacility.*/SyslogFacility AUTH/' \
         -e 's/#LogLevel.*/LogLevel INFO/' && \
     mkdir /var/run/sshd
 
